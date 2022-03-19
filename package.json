@@ -7,7 +7,10 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node index"
   },
-  "keywords": ["download videos","download videos com node js"],
+  "keywords": [
+    "download videos",
+    "download videos com node js"
+  ],
   "author": "Wesley Reis",
   "license": "ISC",
   "dependencies": {

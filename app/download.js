@@ -1,8 +1,7 @@
 const fs = require('fs');
 const path = require('path');
+const { spawn, exec } = require('child_process');
 const state = require('./state.js');
-const util = require('util');
-const exec = util.promisify(require("child_process").exec);
 const dirPath = path.join(__dirname, '../downloads');
 
 async function app() {
@@ -14,22 +13,30 @@ async function app() {
 }
 
 const download = async (content) => {
-    let title = await getTitle(content.urlVideo);
-    let cleanTitle = await clearTitle(title);
-
+    const title = await getTitle(content.urlVideo);
+    const cleanTitle = await clearTitle(title);    
+    const args = 'bv*[height=1080][ext=mp4]+ba[ext=m4a]/bv*[height=720][ext=mp4]+ba[ext=m4a]/bv*[ext=mp4]+ba[ext=m4a]';
+   
     return new Promise((resolve, reject) => {
-        exec(`yt-dlp -f 'bv*[height=1080][ext=mp4]+ba[ext=m4a]/bv*[height=720][ext=mp4]+ba[ext=m4a]/bv*[ext=mp4]+ba[ext=m4a]' ${content.urlVideo} -o downloads/video.mp4`,
-            (err, stdout, stderr) => {
-                if (err) {
-                    reject(err);
-                }
-                content.titleVideo = title;
-                fs.renameSync(`${dirPath}/video.mp4`, `${dirPath}/${cleanTitle}.mp4`);
-                console.log(stdout.toString())
-                resolve(content);
-            })
+    
+        const ls = spawn('yt-dlp', ['-f', args, content.urlVideo, '-o', `${dirPath}/video.mp4`]);
 
-    })
+        ls.stdout.on('data', (data) => {
+            console.log(`stdout: ${data}`);
+        });
+        
+        ls.stderr.on('data', (data) => {
+            console.error(`stderr: ${data}`);
+            reject(data);
+        });
+        
+        ls.on('close', (code) => {
+            console.log(`child process exited with code ${code}`);
+            fs.renameSync(`${dirPath}/video.mp4`, `${dirPath}/${cleanTitle}.mp4`);
+            resolve(code);
+        });
+
+     })
 }
 
 const getTitle = async (content) => {
